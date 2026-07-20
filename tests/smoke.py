@@ -21,6 +21,8 @@ not installed.
 from __future__ import annotations
 
 import dataclasses
+import os
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -114,6 +116,30 @@ class TestAgentFactoryLocal:
         assert isinstance(result, bool)
 
 
+def _has_aws_credentials() -> bool:
+    """Return True if AWS credentials / region look usable in this env.
+
+    Used to skip ``create_deep_agent(bedrock)`` integration tests in
+    environments where no AWS is configured. We accept any of:
+
+    - ``AWS_REGION`` / ``AWS_DEFAULT_REGION`` set in the env
+      (sufficient for ``init_chat_model`` to construct ``ChatBedrock``
+      even if no real credentials exist).
+    - ``~/.aws/credentials`` present (used by local dev / CI secrets).
+    - ``AWS_ACCESS_KEY_ID`` + ``AWS_SECRET_ACCESS_KEY`` set.
+
+    The test still does NOT make a real Bedrock call - it only
+    validates graph compilation, which forces ``ChatBedrock`` to
+    resolve its auth chain.
+    """
+    if os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION"):
+        return True
+    if os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get("AWS_SECRET_ACCESS_KEY"):
+        return True
+    creds_file = Path.home() / ".aws" / "credentials"
+    return creds_file.exists()
+
+
 class TestAgentFactoryBedrock:
     """With the ``bedrock`` group installed, environment=bedrock compiles the graph."""
 
@@ -130,6 +156,12 @@ class TestAgentFactoryBedrock:
     @pytest.mark.skipif(
         not is_factory_available(),
         reason="bedrock group not installed (`uv sync --all-groups`)",
+    )
+    @pytest.mark.skipif(
+        not _has_aws_credentials(),
+        reason=(
+            "no AWS region / credentials in this environment; ChatBedrock construction would fail"
+        ),
     )
     def test_create_bedrock_agent_returns_compiled_graph(
         self,
@@ -154,20 +186,29 @@ class TestAgentFactoryBedrock:
 class TestAgentFactoryAgentCore:
     """environment=agentcore follows the same code path as bedrock today."""
 
-    def test_create_agentcore_returns_metadata_when_local_factory(
-        self,
-    ) -> None:
-        # Even without bedrock deps installed, environment=agentcore
-        # routes through the bedrock branch and raises RuntimeError
-        # when the group is missing - it never silently falls back to
-        # metadata-only.
-        settings = Settings(environment=Environment.AGENTCORE)
+    @pytest.mark.skipif(
+        not is_factory_available(),
+        reason="bedrock group not installed",
+    )
+    @pytest.mark.skipif(
+        not _has_aws_credentials(),
+        reason="no AWS region / credentials in this environment",
+    )
+    def test_create_agentcore_returns_compiled_graph(self) -> None:
+        # environment=agentcore routes through the bedrock branch and
+        # compiles the deepagent graph (the AgentCore Runtime protocol
+        # is the responsibility of the container layer in Sprint C).
+        settings = Settings(environment=Environment.AGENTCORE, aws_region="us-east-1")
+        agent = create_orion_agent(settings)
+        assert agent.environment == "agentcore"
+        assert agent.graph is not None
+
+    def test_create_agentcore_raises_when_group_missing(self) -> None:
         if is_factory_available():
-            agent = create_orion_agent(settings)
-            assert agent.environment == "agentcore"
-        else:
-            with pytest.raises(RuntimeError, match="bedrock"):
-                create_orion_agent(settings)
+            pytest.skip("bedrock group is installed; cannot exercise missing-dep path")
+        settings = Settings(environment=Environment.AGENTCORE)
+        with pytest.raises(RuntimeError, match="bedrock"):
+            create_orion_agent(settings)
 
 
 class TestEchoHandler:
