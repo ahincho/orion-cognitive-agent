@@ -36,17 +36,10 @@ updates:
         applies-to: version-updates
         update-types:
           - "major"
-    # Si el usuario lo prefiere: ignorar updates major (se aplican manualmente).
-    # ignore:
-    #   - dependency-name: "*"
-    #     update-types: ["version-update:semver-major"]
     open-pull-requests-limit: 5
     target-branch: "main"
-    # Branch ordering (workaround classic GitHub): las ramas se nombraran con
-    # formato `dependabot/pip/<ecosystem>-<version>` para evitar colisiones.
     branch-name:
       separator: "/"
-    # Reutilizar commit messages que pasan tests pre-existentes.
     rebase-strategy: "auto"
 
   # -----------------------------------------------------------------------------
