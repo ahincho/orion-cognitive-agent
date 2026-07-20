@@ -115,6 +115,11 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          # Bedrock AgentCore Runtime solo soporta linux/arm64 containers.
+          # El github-hosted runner (ubuntu-latest) es amd64; buildx hace
+          # cross-arch via QEMU. Un Dockerfile ``FROM python:3.12-slim``
+          # resuelve a la variante correcta segun ``platforms:``.
+          platforms: linux/arm64
           tags: ${{ steps.tags.outputs.tags }}
           # GHA cache layer-reuse across runs (scope keeps it scoped to this
           # repo + workflow so a parallel `cd-deploy-prod` would not collide).
