@@ -2,11 +2,21 @@
 
 The app exposes:
 
-- ``GET  /health`` - liveness probe + agent metadata.
-- ``POST /ag-ui``  - placeholder endpoint. The real AG-UI streaming
-                     protocol (``ag-ui-langgraph``) lands in a future
-                     Sprint; this echo is enough for frontend smoke
-                     tests today.
+- ``GET  /ping``         - liveness probe for Bedrock AgentCore
+                            Runtime (per AWS contract). Always returns
+                            ``200 OK`` with agent metadata.
+- ``POST /invocations``   - Bedrock AgentCore invocation endpoint. In
+                            ``local`` mode it echoes the payload (smoke
+                            contract); in ``bedrock``/``agentcore`` mode
+                            it dispatches the request to the compiled
+                            deepagent graph and returns the assistant
+                            message.
+- ``GET  /health``       - convenience probe used by the test suite and
+                            by hand-driven smoke tests.
+- ``POST /ag-ui``        - placeholder endpoint. The real AG-UI
+                            streaming protocol (``ag-ui-langgraph``)
+                            lands in a future Sprint; this echo is
+                            enough for frontend smoke tests today.
 
 The factory pattern keeps the FastAPI app testable: instantiate the
 app with explicit settings in tests, while ``server.py`` wires the
@@ -22,12 +32,13 @@ from __future__ import annotations
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from orion_cognitive_agent.agent import ORIONAgent, create_orion_agent
-from orion_cognitive_agent.config import Settings
+from orion_cognitive_agent.config import Environment, Settings
 from orion_cognitive_agent.observability.langsmith import configure_langsmith
 from orion_cognitive_agent.utils import setup_logging
 
@@ -64,6 +75,39 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     logger.info("ORION Cognitive Agent stopped")
 
 
+def _agent_metadata(agent: ORIONAgent) -> dict[str, object]:
+    """Serialize agent metadata used by ``/ping`` and ``/health``."""
+    return {
+        "status": "ok",
+        "environment": agent.environment,
+        "model_id": agent.model_id,
+        "agent_name": agent.agent_name,
+        "max_turns": agent.max_turns,
+    }
+
+
+def _extract_user_text(payload: dict[str, object]) -> str:
+    """Normalise the request body coming into ``/invocations``.
+
+    Accepts both shapes:
+
+    - ``{"input": {"text": "..."}}`` — Bedrock AgentCore native shape.
+    - ``{"text": "..."}`` — shorthand.
+    - ``{"input": "..."}`` — stringified input.
+
+    Returns the user message text or ``""`` if not found (callers
+    decide whether the empty input is a 400 or an echo).
+    """
+    candidate = payload.get("input", payload)
+    if isinstance(candidate, str):
+        return candidate
+    if isinstance(candidate, dict):
+        raw = candidate.get("text")
+        if isinstance(raw, str):
+            return raw
+    return ""
+
+
 def create_app(settings: Settings) -> FastAPI:
     """Build and return the FastAPI app bound to the given settings."""
     app = FastAPI(
@@ -96,14 +140,80 @@ def create_app(settings: Settings) -> FastAPI:
 
     @app.get("/health")
     def health() -> dict[str, object]:
-        """Liveness probe + agent metadata."""
+        """Liveness probe + agent metadata (test-suite convention)."""
+        return _agent_metadata(app.state.agent)
+
+    @app.get("/ping")
+    async def ping() -> dict[str, object]:
+        """Bedrock AgentCore Runtime liveness probe.
+
+        Contract: ``GET /ping`` returns ``200 OK`` as long as the
+        Python process is alive and the FastAPI app is wired. Body
+        matches the ``/health`` payload for parity.
+        """
+        return _agent_metadata(app.state.agent)
+
+    @app.post("/invocations")
+    async def invocations(payload: dict[str, object]) -> dict[str, object]:
+        """Bedrock AgentCore Runtime invocation endpoint.
+
+        Contract: ``POST /invocations`` accepts an arbitrary JSON
+        document and returns a JSON response. In ``local`` mode the
+        endpoint echoes the payload (smoke contract). In
+        ``bedrock``/``agentcore`` mode it dispatches the request to
+        the compiled deepagent graph and returns the last assistant
+        message.
+        """
+        env = app.state.settings.environment
         agent = app.state.agent
+
+        # LOCAL mode: echo (used in tests and in the no-AWS dev loop).
+        if env == Environment.LOCAL:
+            return {
+                "echo": payload,
+                "agent_environment": agent.environment,
+                "stub": True,
+            }
+
+        text = _extract_user_text(payload)
+        if not text:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "missing user text: expected JSON shape "
+                    '{"input": {"text": "..."}} or {"text": "..."}'
+                ),
+            )
+
+        if agent.graph is None:
+            # Defensive: if ``environment != LOCAL`` but the graph is
+            # missing, the factory must have been called with
+            # ``local`` somewhere. Surface the misconfig loudly.
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"agent graph not available in environment={env.value}; "
+                    "check that the bedrock dependency group is installed "
+                    "(`uv sync --group bedrock`).",
+                ),
+            )
+
+        # Build the deepagent input. ``langchain_core.messages`` is part
+        # of the optional bedrock group, so keep the import lazy here.
+        from langchain_core.messages import HumanMessage
+
+        result: Any = await agent.graph.ainvoke({"messages": [HumanMessage(content=text)]})
+        messages = result.get("messages", []) if isinstance(result, dict) else []
+        last_content: Any = ""
+        if messages:
+            tail = messages[-1]
+            last_content = getattr(tail, "content", "")
+
         return {
-            "status": "ok",
-            "environment": agent.environment,
-            "model_id": agent.model_id,
-            "agent_name": agent.agent_name,
-            "max_turns": agent.max_turns,
+            "output": {
+                "text": last_content if isinstance(last_content, str) else str(last_content),
+                "messages_count": len(messages),
+            }
         }
 
     @app.post("/ag-ui")

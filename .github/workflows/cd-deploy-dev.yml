@@ -1,0 +1,136 @@
+# =============================================================================
+# ORION Cognitive Agent - CD (Deploy Dev)
+# =============================================================================
+# Builds the Dockerfile and pushes the resulting image to the ECR repository
+# managed by `orion-infrastructure` (`orion-agent-core-dev`, mutable image
+# tags). The deploy job uses GitHub OIDC to assume the IAM role
+# `orion-agent-core-deploy-dev` provisioned by the infra repo (its trust
+# policy accepts sub=repo:ahincho/orion-cognitive-agent:ref:refs/heads/main).
+#
+# Required GitHub Secrets (set in this repo):
+#   - AGENT_DEPLOY_ROLE_ARN  - ARN of `orion-agent-core-deploy-dev`.
+#
+# Required GitHub Variables (set in this repo):
+#   - AWS_REGION              - Region for the OIDC STS call. Default: us-east-1.
+# =============================================================================
+
+name: CD - Deploy Dev
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.python-version'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/cd-deploy-dev.yml'
+  workflow_dispatch:
+    inputs:
+      image_tag_override:
+        description: "Optional override of the docker image tag (default: latest + git sha)."
+        required: false
+        type: string
+
+# OIDC tokens are mandatory for `aws-actions/configure-aws-credentials`.
+permissions:
+  contents: read
+  id-token: write
+
+# Single concurrency group; cancel in-progress deploys for the same ref.
+concurrency:
+  group: cd-deploy-dev-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  ECR_REPOSITORY: orion-agent-core-dev
+
+jobs:
+  deploy-dev:
+    name: Deploy (dev)
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # OIDC: exchange the short-lived GH Actions token for AWS STS credentials
+      # of the `orion-agent-core-deploy-dev` role. No static AWS keys.
+      - name: Configure AWS credentials (OIDC, deploy role)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AGENT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Verify identity quickly (catches role trust misconfig before the
+      # expensive build).
+      - name: Verify STS identity
+        run: |
+          set -euo pipefail
+          ACCOUNT="$(aws sts get-caller-identity --query 'Account' --output text)"
+          echo "Authenticated as AWS account: ${ACCOUNT} (region: ${AWS_REGION})"
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registries: ${{ env.AWS_ACCOUNT_ID || '' }}
+
+      # Resolve the ECR registry from STS (the deploy role does not necessarily
+      # know the account id at parse time; resolve via STS to keep the
+      # workflow env-independent of `vars.AWS_ACCOUNT_ID`).
+      - name: Resolve ECR registry
+        id: registry
+        run: |
+          set -euo pipefail
+          REGISTRY="${AWS_ACCOUNT_ID:-$(aws sts get-caller-identity --query 'Account' --output text)}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+          echo "registry=${REGISTRY}" >> "${GITHUB_OUTPUT}"
+          echo "ECR registry: ${REGISTRY}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute image tags
+        id: tags
+        run: |
+          set -euo pipefail
+          SHA_SHORT="${GITHUB_SHA::7}"
+          REGISTRY="${{ steps.registry.outputs.registry }}"
+          # workflow_dispatch override; otherwise latest + sha.
+          if [ -n "${{ inputs.image_tag_override }}" ]; then
+            TAGS="${REGISTRY}/${ECR_REPOSITORY}:${{ inputs.image_tag_override }}"
+          else
+            TAGS="${REGISTRY}/${ECR_REPOSITORY}:latest,${REGISTRY}/${ECR_REPOSITORY}:${SHA_SHORT}"
+          fi
+          echo "tags=${TAGS}" >> "${GITHUB_OUTPUT}"
+          echo "Will push tags: ${TAGS}"
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          # GHA cache layer-reuse across runs (scope keeps it scoped to this
+          # repo + workflow so a parallel `cd-deploy-prod` would not collide).
+          cache-from: type=gha,scope=agentcore-dev
+          cache-to: type=gha,scope=agentcore-dev,mode=max
+          provenance: false
+          sbom: false
+
+      - name: Summary
+        if: always()
+        run: |
+          set -euo pipefail
+          {
+            echo "## CD Deploy Dev - Summary"
+            echo "- Commit:        ${GITHUB_SHA}"
+            echo "- Image tags:    ${{ steps.tags.outputs.tags }}"
+            echo "- Triggered by:  @${GITHUB_ACTOR}"
+            echo "- Environment:   dev"
+          } >> "$GITHUB_STEP_SUMMARY"

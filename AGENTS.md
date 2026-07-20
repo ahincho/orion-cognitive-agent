@@ -72,11 +72,27 @@ Variables de entorno clave (todas con prefijo `ORION_AGENT_*`):
 
 - **En local (dev)**: `.env` (ignorado) cargado por Pydantic Settings.
 - **En CI**: secrets de GitHub Actions (`ORION_AGENT_*` equivalentes).
-- **En AWS**: IAM role asumido por GitHub OIDC (`orion-agent-dev`)
-  provisionado por `orion-infrastructure` (Sprint de IaC futuro).
+- **En AWS**: IAM role asumido por GitHub OIDC (`orion-agent-core-deploy-dev`)
+  provisionado por `orion-infrastructure` (PR #46, Fase 1.6).
 
 **Nunca** commitear credenciales, keys ni valores de `ORION_AGENT_*` —
 el `.gitignore` lo blinda y `gitleaks` en CI lo audita.
+
+### Required GitHub configuration
+
+| Tipo | Nombre | Valor |
+|---|---|---|
+| Secret | `AGENT_DEPLOY_ROLE_ARN` | `arn:aws:iam::681526276858:role/orion-agent-core-deploy-dev` |
+| Variable (repo-scoped) | `TF_VERSION` | `1.15.7` (lo mismo que infra) |
+| Variable (opcional) | `AWS_REGION` | `us-east-1` (default si falta) |
+
+Configurar con (cuenta `ahincho` activa):
+
+```bash
+gh secret set AGENT_DEPLOY_ROLE_ARN \
+  --body "arn:aws:iam::681526276858:role/orion-agent-core-deploy-dev" \
+  --repo ahincho/orion-cognitive-agent
+```
 
 ## Git Workflow (mandatory)
 
@@ -137,6 +153,59 @@ Este repo está en **bootstrap**. El código que se agregue debe seguir
 los patrones de `src/orion_cognitive_agent/` ya establecidos. Cada
 cambio sigue el stack declarado arriba y se integra con el resto del
 monorepo vía el repo `orion-infrastructure` (cuando aplique IaC AWS).
+
+## Deploy (Dev only, single environment)
+
+> El agente corre exclusivamente en `dev` (cuenta `orion-cognitive-agent`,
+> region `us-east-1`). Si en el futuro se quisiera exponer públicamente,
+> se reabre la conversación arquitectónica (ver
+> `docs/architectural-decisions/0003-monorepo-coordination.md`).
+
+### Pipeline
+
+```
+push to main
+  └─> CI - Lint & Security       (actionlint, gitleaks, yamllint)
+  └─> CI Python                  (ruff + mypy strict + pytest, dev + bedrock groups)
+  └─> CD - Deploy Dev            (.github/workflows/cd-deploy-dev.yml)
+        ├─ checkout
+        ├─ OIDC: assume role  arn:aws:iam::681526276858:role/orion-agent-core-deploy-dev
+        ├─ aws-actions/amazon-ecr-login@v2
+        ├─ docker/build-push-action@v5 con cache GHA scope=agentcore-dev
+        └─ push to ECR  orion-agent-core-dev:{$GITHUB_SHA::7}  AND  :latest
+```
+
+### Container contract (Bedrock AgentCore)
+
+El container expone los endpoints que el runtime de Bedrock AgentCore
+necesita para validar / invocar:
+
+- `GET  /ping`        → 200 OK JSON con metadata del agente. Usado
+                         también como `HEALTHCHECK` del Dockerfile.
+- `POST /invocations`  → acepta JSON, dispatch al deepagent graph
+                         (cuando `ORION_AGENT_ENVIRONMENT=agentcore` o
+                         `bedrock`) o echo en modo `local`.
+
+Adicionalmente, mantiene los endpoints legacy `GET /health` y
+`POST /ag-ui` que el test suite y el frontend Angular consumen.
+
+### Variables de entorno en runtime (AgentCore)
+
+| Variable | Valor por defecto | Override posible |
+|---|---|---|
+| `ORION_AGENT_ENVIRONMENT` | `agentcore` (hardcoded en el Dockerfile) | solo durante build local con `docker run -e` |
+| `ORION_AGENT_AWS_REGION`  | `us-east-1` | idem |
+| `ORION_AGENT_API_HOST`    | `0.0.0.0` | idem |
+| `ORION_AGENT_API_PORT`    | `8000` | idem |
+| `ORION_AGENT_MODEL_ID`    | (settings default: Claude Sonnet 4) | idem |
+| `ORION_AGENT_LOG_LEVEL`   | `INFO` | idem |
+| `AWS_REGION`              | (Task role ya en us-east-1) | provisto por el AgentCore Runtime |
+
+> Una vez creado el AgentRuntime en `orion-infrastructure`,
+> `ORION_AGENT_ENVIRONMENT` y `ORION_AGENT_AWS_REGION` también pueden
+> inyectarse vía la configuración del
+> `aws_bedrockagentcore_agent_runtime.environment_variables` (ver
+> `live/dev/main.tf` modulo `bedrock-agent-core-runtime`).
 
 ## Contacto
 
