@@ -28,10 +28,7 @@ def create_app(settings: Settings) -> FastAPI:
     app = FastAPI(
         title="ORION Cognitive Agent",
         version="0.1.0",
-        description=(
-            "ORION cognitive agent: Deep Agent over AWS Bedrock, "
-            "exposed via FastAPI."
-        ),
+        description="ORION cognitive agent: Deep Agent over AWS Bedrock, exposed via FastAPI.",
     )
     agent = create_orion_agent(settings)
 

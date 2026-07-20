@@ -100,7 +100,7 @@ class Settings(BaseSettings):
     )
     cors_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:4200"],
-        description="Origins allowed by CORS (JSON list, e.g. [\"http://localhost:4200\"])",
+        description='Origins allowed by CORS (JSON list, e.g. ["http://localhost:4200"])',
     )
 
     # -------------------------------------------------------------------------

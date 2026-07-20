@@ -21,7 +21,6 @@ updates:
       timezone: "America/Lima"
     commit-message:
       prefix: "deps(python)"
-      prefix-development: "deps(python-dev)"
       include: "scope"
     labels:
       - "dependencies"
