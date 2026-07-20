@@ -14,7 +14,6 @@ rules:
   # Documentos YAML arrancan con `---`.
   document-start:
     present: true
-    present-with-yaml-directive: true
   # Toleramos lineas largas en GitHub Actions (paths y shells).
   line-length:
     max: 200
