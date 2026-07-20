@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+import dataclasses
+
+import pytest
 from fastapi.testclient import TestClient
 
-from orion_cognitive_agent import __version__, create_orion_agent, get_settings
+from orion_cognitive_agent import (
+    __version__,
+    create_orion_agent,
+    get_settings,
+)
 from orion_cognitive_agent.api import create_app
 from orion_cognitive_agent.config import Environment
 
@@ -50,13 +57,8 @@ class TestAgentFactory:
     def test_orion_agent_is_frozen(self) -> None:
         settings = get_settings()
         agent = create_orion_agent(settings)
-        try:
-            agent.environment = "bedrock"  # type: ignore[misc]
-        except Exception as exc:  # FrozenInstanceError
-            assert "frozen" in str(exc).lower() or "assign" in str(exc).lower()
-        else:
-            msg = "ORIONAgent should be frozen"
-            raise AssertionError(msg)
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            agent.environment = "bedrock"  # type: ignore[misc, attr-defined]
 
 
 class TestFastAPIApp:

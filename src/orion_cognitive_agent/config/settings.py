@@ -7,14 +7,14 @@ from the process environment or from a local ``.env`` file (see
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from functools import lru_cache
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Environment(str, Enum):
+class Environment(StrEnum):
     """Deployment environments for ORION Cognitive Agent.
 
     Only ``local`` is fully implemented today. ``bedrock`` and
@@ -27,7 +27,7 @@ class Environment(str, Enum):
     AGENTCORE = "agentcore"
 
 
-class ModelProvider(str, Enum):
+class ModelProvider(StrEnum):
     """LLM provider for the agent.
 
     Only ``bedrock`` is supported today. The enum is kept extensible so
