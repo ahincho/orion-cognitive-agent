@@ -258,7 +258,7 @@ class TestEchoTool:
 
 
 class TestFastAPIApp:
-    """Verify the app responds to /health and /ag-ui without AWS."""
+    """Verify the app responds to /health, /ping, /invocations and /ag-ui without AWS."""
 
     def test_health_endpoint(self) -> None:
         settings = get_settings()
@@ -271,6 +271,40 @@ class TestFastAPIApp:
         assert body["environment"] == "local"
         assert body["agent_name"] == settings.agent_name
         assert body["model_id"] == settings.model_id
+
+    def test_ping_endpoint(self) -> None:
+        """Bedrock AgentCore liveness probe - 200 + same schema as /health."""
+        settings = get_settings()
+        app = create_app(settings)
+        client = TestClient(app)
+        response = client.get("/ping")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["status"] == "ok"
+        assert body["environment"] == "local"
+        assert body["model_id"] == settings.model_id
+
+    def test_invocations_local_echo_shape_input(self) -> None:
+        """environment=local echoes the native AgentCore shape ``{"input": {"text": ...}}``."""
+        settings = get_settings()
+        app = create_app(settings)
+        client = TestClient(app)
+        response = client.post("/invocations", json={"input": {"text": "hello"}})
+        assert response.status_code == 200
+        body = response.json()
+        assert body["echo"] == {"input": {"text": "hello"}}
+        assert body["agent_environment"] == "local"
+        assert body["stub"] is True
+
+    def test_invocations_local_echo_shorthand(self) -> None:
+        """environment=local also accepts the ``{"text": ...}`` shorthand."""
+        settings = get_settings()
+        app = create_app(settings)
+        client = TestClient(app)
+        response = client.post("/invocations", json={"text": "hi"})
+        assert response.status_code == 200
+        body = response.json()
+        assert body["echo"] == {"text": "hi"}
 
     def test_ag_ui_endpoint_echoes_payload(self) -> None:
         settings = get_settings()
