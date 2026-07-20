@@ -127,8 +127,10 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          echo "## CD Deploy Dev - Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Commit:        ${GITHUB_SHA}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Image tags:    ${{ steps.tags.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Triggered by:  @${GITHUB_ACTOR}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Environment:   dev" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## CD Deploy Dev - Summary"
+            echo "- Commit:        ${GITHUB_SHA}"
+            echo "- Image tags:    ${{ steps.tags.outputs.tags }}"
+            echo "- Triggered by:  @${GITHUB_ACTOR}"
+            echo "- Environment:   dev"
+          } >> "$GITHUB_STEP_SUMMARY"
