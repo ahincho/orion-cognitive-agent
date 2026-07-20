@@ -5,7 +5,14 @@ Public API:
 - :class:`ORIONAgent`       - immutable handle to a configured agent.
 - :func:`create_orion_agent` - top-level factory (delegates per env).
 - :func:`is_factory_available` - capability probe (no AWS calls).
-- :class:`MaxTurnsMiddleware` - stop agent cleanly on turn cap.
+
+Middlewares are NOT re-exported here. Import them explicitly:
+
+    from orion_cognitive_agent.agent.middleware import MaxTurnsMiddleware
+
+This keeps ``from orion_cognitive_agent.agent import ORIONAgent``
+working even when the ``bedrock`` dependency group is not installed
+(middleware pulls in ``langchain.agents.middleware``).
 """
 
 from orion_cognitive_agent.agent.factory import (
@@ -13,10 +20,8 @@ from orion_cognitive_agent.agent.factory import (
     create_orion_agent,
     is_factory_available,
 )
-from orion_cognitive_agent.agent.middleware import MaxTurnsMiddleware
 
 __all__ = [
-    "MaxTurnsMiddleware",
     "ORIONAgent",
     "create_orion_agent",
     "is_factory_available",

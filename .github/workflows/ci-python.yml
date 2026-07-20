@@ -55,9 +55,11 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ matrix.python-version }}
 
-      - name: Install dev dependencies
-        # Sync only the `dev` group to keep CI fast; bedrock deps are runtime-only.
-        run: uv sync --group dev
+      - name: Install dev + bedrock dependencies
+        # Sync both `dev` and `bedrock` so mypy strict can check the full
+        # LangChain / langchain-aws / deepagents surface, and so the
+        # bedrock-class smoke tests can run end-to-end on every push.
+        run: uv sync --all-groups
 
       - name: Lint (ruff format check)
         run: uv run ruff format --check src/ tests/

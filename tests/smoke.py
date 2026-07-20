@@ -37,7 +37,6 @@ from orion_cognitive_agent.api import create_app
 
 # Re-imports needed for tests that depend on the lazy-loaded factory.
 from orion_cognitive_agent.tools.echo.handler import echo_handler
-from orion_cognitive_agent.tools.echo.tool import echo_tool
 
 
 class TestPackageImport:
@@ -195,7 +194,15 @@ class TestEchoHandler:
 class TestEchoTool:
     """The LangChain @tool wrapper around echo_handler."""
 
+    @pytest.mark.skipif(
+        not is_factory_available(),
+        reason="bedrock group not installed (`uv sync --all-groups`)",
+    )
     def test_echo_tool_is_structured_tool(self) -> None:
+        # Lazy import - the tool module pulls in langchain_core, which
+        # only exists when the bedrock group is installed.
+        from orion_cognitive_agent.tools.echo.tool import echo_tool
+
         # ``langchain_core.tools.tool`` returns a ``StructuredTool``
         # instance, not a plain function. Sanity-check the contract:
         # a ``.name`` and a ``.invoke(input)`` method that round-trips

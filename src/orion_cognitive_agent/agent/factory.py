@@ -47,12 +47,15 @@ def is_factory_available() -> bool:
     """Return True if DeepAgents + langchain-aws can be imported.
 
     Used by the ``dev`` environment to decide whether to install the
-    ``bedrock`` dependency group (see ``pyproject.toml``).
+    ``bedrock`` dependency group (see ``pyproject.toml``). Catches
+    every :class:`Exception` (not just ``ImportError``) so that
+    misconfigured installs (e.g. missing native libs) still produce
+    a clean ``False`` instead of crashing the caller.
     """
     try:
         import deepagents  # noqa: F401
         import langchain_aws  # noqa: F401
-    except ImportError:
+    except Exception:
         return False
     return True
 
@@ -109,7 +112,6 @@ def _build_bedrock_graph(
     """
     try:
         from deepagents import create_deep_agent
-        from langchain.agents.middleware import AgentState
     except ImportError as exc:
         raise RuntimeError(
             "environment="
@@ -122,14 +124,16 @@ def _build_bedrock_graph(
     # of `from orion_cognitive_agent import get_settings` small.
     from orion_cognitive_agent.agent.middleware import MaxTurnsMiddleware
     from orion_cognitive_agent.prompts import SYSTEM_PROMPT
-    from orion_cognitive_agent.tools import ECHO_TOOL
+    from orion_cognitive_agent.tools import ECHO_TOOL as _ECHO_TOOL
 
-    if not isinstance(AgentState, type):  # pragma: no cover - sanity check
-        pass
+    # The lazy ``__getattr__`` in ``orion_cognitive_agent.tools`` returns
+    # ``object`` so the package imports without the ``bedrock`` group
+    # installed. Re-cast to ``Any`` here so ``create_deep_agent`` accepts it.
+    echo_tool: Any = _ECHO_TOOL
 
     return create_deep_agent(
         model=settings.model_string,
-        tools=[ECHO_TOOL],
+        tools=[echo_tool],
         system_prompt=SYSTEM_PROMPT,
         name=settings.agent_name,
         middleware=[MaxTurnsMiddleware()],
