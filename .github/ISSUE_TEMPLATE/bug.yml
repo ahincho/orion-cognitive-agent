@@ -1,0 +1,78 @@
+name: Bug
+
+description: Reporta un bug en el agente cognitivo ORION.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar un bug. Antes de abrir un issue, verifica que
+        el problema no haya sido reportado en issues existentes.
+
+  - type: input
+    id: environment
+    attributes:
+      label: Entorno afectado
+      description: "ORION_AGENT_ENVIRONMENT (local | bedrock | agentcore)"
+      placeholder: "local"
+      validations:
+        required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Version de Python
+      placeholder: "3.12.x"
+      validations:
+        required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      description: "Pasos minimos para reproducir el bug."
+      placeholder: |
+        1. Ejecuta `make run-local`
+        2. POST `/ag-ui` con payload `{...}`
+        3. Observa que ...
+      validations:
+        required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamiento esperado
+      validations:
+        required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamiento actual
+      validations:
+        required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs o stacktrace relevantes
+      render: shell
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area afectada
+      options:
+        - Agent (DeepAgent factory / LangGraph)
+        - API (FastAPI / uvicorn)
+        - Settings (Pydantic)
+        - Tests (pytest / fixtures)
+        - CI / Dependabot
+        - Tool (registered @tool)
+        - Documentacion
+        - Otro
+    validations:
+      required: true

@@ -1,0 +1,80 @@
+# =============================================================================
+# ORION Cognitive Agent — CI Python (unit tests + lint + typecheck)
+# =============================================================================
+# Stack: Python 3.12 + uv + Pytest + Ruff + mypy strict.
+# Path filter: solo dispara cuando cambian archivos Python o de toolchain.
+# =============================================================================
+
+name: CI Python
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.python-version'
+      - '.github/workflows/ci-python.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.python-version'
+      - '.github/workflows/ci-python.yml'
+
+concurrency:
+  group: ci-py-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    name: QA (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: |
+            **/uv.lock
+            **/pyproject.toml
+
+      - name: Set up Python
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dev dependencies
+        # Sync only the `dev` group to keep CI fast; bedrock deps are runtime-only.
+        run: uv sync --group dev
+
+      - name: Lint (ruff format check)
+        run: uv run ruff format --check src/ tests/
+
+      - name: Lint (ruff check)
+        run: uv run ruff check src/ tests/
+
+      - name: Type check (mypy strict)
+        run: uv run mypy src/
+
+      - name: Run tests (pytest)
+        run: uv run pytest --tb=short
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.python-version }}
+          path: coverage.xml
+          if-no-files-found: ignore

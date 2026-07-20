@@ -1,0 +1,61 @@
+# =============================================================================
+# ORION Cognitive Agent — CI (markdown / yaml / secrets)
+# =============================================================================
+# Reusa los workflows de `spark-match/spark-match-01-devops@main`:
+#   - actionlint.yml  -> lint GitHub Actions YAML
+#   - gitleaks.yml    -> secret scan (requiere GITLEAKS_LICENSE en secrets)
+#   - yamllint.yml    -> yaml lint global del repo (auto-discovers .yamllint.yml)
+#
+# IMPORTANTE: pasar `environment-name: ci` para que los check names compuestos
+# que matchean el ruleset (`actionlint / actionlint (env=ci)`, etc.) emitan
+# correctamente. Sin este input, el reusable usa su default `dev` y los check
+# names quedan `actionlint / actionlint (env=dev)`, no matcheando el ruleset.
+#
+# Names de los reusables (top-level `name:` en cada uno):
+#   Actionlint, Gitleaks, yamllint — pero el check name final es la concatenacion
+#   `<caller-job-key> / <reusable-job-name>` que termina como
+#   `actionlint / actionlint (env=ci)`, etc. (verificado en spark-match-01-devops
+#   PR #51 runs).
+# =============================================================================
+
+name: CI - Lint & Security
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/**'
+      - '**.yml'
+      - '**.yaml'
+      - '**.md'
+  push:
+    branches: [main]   # no paths filter — strict mode requires checks on every commit
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actionlint:
+    name: actionlint
+    uses: spark-match/spark-match-01-devops/.github/workflows/actionlint.yml@main
+    with:
+      environment-name: ci
+
+  gitleaks:
+    name: gitleaks
+    uses: spark-match/spark-match-01-devops/.github/workflows/gitleaks.yml@main
+    with:
+      environment-name: ci
+    secrets:
+      GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  yamllint:
+    name: yamllint
+    uses: spark-match/spark-match-01-devops/.github/workflows/yamllint.yml@main
+    with:
+      environment-name: ci

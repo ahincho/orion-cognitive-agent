@@ -1,0 +1,71 @@
+name: Feature request
+
+description: Propone una nueva funcionalidad para el agente cognitivo ORION.
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Las features que extienden el agente deben acompañarse de un ADR en
+        `docs/architectural-decisions/` si son decisiones arquitectonicas.
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivacion
+      description: "Que problema resuelve? Por que es importante?"
+      validations:
+        required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta
+      description: "Como lo resolverias? Que stack / libreria / patron?"
+      validations:
+        required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: "Otras opciones evaluadas y por que se descartaron."
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area afectada
+      options:
+        - Agent (DeepAgent factory / LangGraph)
+        - API (FastAPI / AG-UI / SSE)
+        - Tool (registered @tool)
+        - Settings (Pydantic)
+        - Tests
+        - CI / Governance
+        - Documentacion
+        - Otro
+    validations:
+      required: true
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impacto
+      options:
+        - Pequeno (interno, sin breaking change)
+        - Medio (cambia API pero mantiene backward compatibility)
+        - Grande (breaking change o nuevo modulo)
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceptacion
+      placeholder: |
+        - [ ] Tests agregados
+        - [ ] Documentacion actualizada
+        - [ ] ADR creado (si aplica)
