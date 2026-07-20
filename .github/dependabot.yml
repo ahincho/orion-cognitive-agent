@@ -30,12 +30,12 @@ updates:
       python-minor:
         applies-to: version-updates
         update-types:
-          - "minor"
-          - "patch"
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
       python-major:
         applies-to: version-updates
         update-types:
-          - "major"
+          - "version-update:semver-major"
     open-pull-requests-limit: 5
     target-branch: "main"
     branch-name:
@@ -62,12 +62,12 @@ updates:
       actions-minor:
         applies-to: version-updates
         update-types:
-          - "minor"
-          - "patch"
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
       actions-major:
         applies-to: version-updates
         update-types:
-          - "major"
+          - "version-update:semver-major"
     open-pull-requests-limit: 5
     target-branch: "main"
     rebase-strategy: "auto"
