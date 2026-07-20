@@ -4,6 +4,11 @@
 # Configuracion semanal para mantener al dia:
 #   - Dependencias Python (pip / uv) de src/, pyproject.toml, uv.lock
 #   - Acciones de GitHub referenciadas en .github/workflows/
+#
+# Mantener SIMPLE en bootstrap: sin `groups:` (dependabot crea PRs
+# individuales por paquete; suficiente para solo-dev). El bloque
+# `groups:` puede reintroducirse en un sprint futuro si necesitamos
+# agrupar varias updates en un solo PR.
 # =============================================================================
 
 version: 2
@@ -25,22 +30,8 @@ updates:
     labels:
       - "dependencies"
       - "python"
-    # Agrupar todas las updates menores/patch en un solo PR.
-    groups:
-      python-minor:
-        applies-to: version-updates
-        update-types:
-          - "version-update:semver-minor"
-          - "version-update:semver-patch"
-      python-major:
-        applies-to: version-updates
-        update-types:
-          - "version-update:semver-major"
     open-pull-requests-limit: 5
     target-branch: "main"
-    branch-name:
-      separator: "/"
-    rebase-strategy: "auto"
 
   # -----------------------------------------------------------------------------
   # GitHub Actions versions (referenciadas via `uses: ...@<version>`).
@@ -58,16 +49,5 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
-    groups:
-      actions-minor:
-        applies-to: version-updates
-        update-types:
-          - "version-update:semver-minor"
-          - "version-update:semver-patch"
-      actions-major:
-        applies-to: version-updates
-        update-types:
-          - "version-update:semver-major"
     open-pull-requests-limit: 5
     target-branch: "main"
-    rebase-strategy: "auto"
