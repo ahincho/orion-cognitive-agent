@@ -1,0 +1,27 @@
+# =============================================================================
+# ORION Cognitive Agent — .yamllint.yml
+# =============================================================================
+# Mismo set de reglas que spark-match-01-devops (consistencia cross-repo).
+# =============================================================================
+
+extends: default
+
+rules:
+  # Comentarios necesitan espacio despues de `#`.
+  comments:
+    require-starting-space: true
+    min-spaces-from-content: 1
+  # Documentos YAML arrancan con `---`.
+  document-start:
+    present: true
+    present-with-yaml-directive: true
+  # Toleramos lineas largas en GitHub Actions (paths y shells).
+  line-length:
+    max: 200
+    level: warning
+  # truthy: GitHub Actions usa mucho `on:` (interpretado como True).
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off']
+    check-keys: false
+  # GitHub Actions requiere comillas en strings con caracteres especiales.
+  quoted-strings: disable

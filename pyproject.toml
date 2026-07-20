@@ -1,0 +1,123 @@
+[project]
+name = "orion-cognitive-agent"
+version = "0.1.0"
+description = "ORION cognitive agent: Deep Agent over AWS Bedrock (AgentCore Runtime)."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "ahincho" }]
+keywords = [
+    "orion",
+    "deepagents",
+    "bedrock",
+    "agentcore",
+    "fastapi",
+    "agent",
+]
+
+dependencies = [
+    # Settings (Pydantic)
+    "pydantic>=2.8.0",
+    "pydantic-settings>=2.8.0",
+    # API server
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    # HTTP client (for FastAPI TestClient)
+    "httpx>=0.28.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["orion_cognitive_agent"]
+
+# -----------------------------------------------------------------------------
+# Dependency groups (PEP 735 — uv installs via `uv sync --group <name>`)
+# -----------------------------------------------------------------------------
+[dependency-groups]
+# Runtime opcional para environment=bedrock / agentcore.
+# NO se instalan por default en `uv sync`; se activan con:
+#   uv sync --all-groups   (dev + bedrock)
+#   uv sync --group bedrock
+bedrock = [
+    "deepagents>=0.6.12",
+    "langchain-aws>=1.6.1",
+]
+
+# Dev tools: test, lint, format, typecheck.
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=1.0.0",
+    "ruff>=0.9.0",
+    "mypy>=1.15.0",
+]
+
+# -----------------------------------------------------------------------------
+# Ruff (linter + formatter)
+# -----------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# E/W: pycodestyle  F: pyflakes  I: isort  UP: pyupgrade  B: bugbear  SIM: simplify
+# ASYNC: async-correctness  PT: pytest-style  RET: return-statements  RUF: ruff-specific
+select = [
+    "E", "F", "I", "UP", "B", "SIM",
+    "ASYNC", "PT", "RET", "RUF",
+]
+# RUF001/RUF002 (caracteres ambiguos en strings/docstrings) y RUF012
+# (mutable class attributes) son ruidosos en este codebase; revisar en
+# sprint de limpieza.
+ignore = ["RUF001", "RUF002", "RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests usan assert libremente, docstrings largas, fixtures sin usar.
+"tests/**/*.py" = ["S101", "PT004"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["orion_cognitive_agent"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# -----------------------------------------------------------------------------
+# Pytest
+# -----------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+pythonpath = ["src"]
+# Convencion: tests/<dominio>/<modulo>.py (sin prefijo `test_` en filenames).
+# pytest discovery recoge cualquier `*.py` recursivamente bajo testpaths.
+python_files = ["*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# -----------------------------------------------------------------------------
+# mypy (strict + extras)
+# -----------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_unused_configs = true
+
+# Third-party libs sin py.typed markers: silenciamos import-untyped
+# para no romper el strict. App code sigue estrictamente chequeado.
+[[tool.mypy.overrides]]
+module = [
+    "deepagents",
+    "deepagents.*",
+    "langchain_aws",
+    "langchain_aws.*",
+]
+ignore_missing_imports = true

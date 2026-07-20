@@ -1,0 +1,36 @@
+# =============================================================================
+# ORION Cognitive Agent - .gitattributes
+# =============================================================================
+# Line endings y heuristicas de GitHub Linguist consistentes.
+# =============================================================================
+
+# Line endings: LF para todo; CRLF only en archivos generados por Windows
+# que el repo no controla (ej. .bat, .ps1).
+*               text=auto eol=lf
+
+# Scripts que requieren CRLF en ejecucion
+*.bat           text eol=crlf
+*.cmd           text eol=crlf
+*.ps1           text eol=crlf
+
+# Python: forzar UTF-8 y deshabilitar diff generation para caches
+*.py            text eol=lf diff=python
+*.pyi           text eol=lf
+
+# YAML / JSON siempre LF
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.json          text eol=lf
+
+# Markdown: forzar LF y deshabilitar word-wrap en diff
+*.md            text eol=lf
+
+# Bloquear binarios como texto (prevencion)
+*.lock          -text
+uv.lock         text eol=lf
+
+# GitHub Linguist overrides para hacer visible ciertos archivos
+# (evitar que uv.lock, LICENSE, .gitignore sean ignorados por Linguist).
+uv.lock         linguist-generated=true
+*.min.js        linguist-generated=true
+*.min.css       linguist-generated=true
