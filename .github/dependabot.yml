@@ -1,0 +1,81 @@
+# =============================================================================
+# ORION Cognitive Agent — Dependabot
+# =============================================================================
+# Configuracion semanal para mantener al dia:
+#   - Dependencias Python (pip / uv) de src/, pyproject.toml, uv.lock
+#   - Acciones de GitHub referenciadas en .github/workflows/
+# =============================================================================
+
+version: 2
+
+updates:
+  # -----------------------------------------------------------------------------
+  # Python dependencies (pyproject.toml + uv.lock).
+  # -----------------------------------------------------------------------------
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Lima"
+    commit-message:
+      prefix: "deps(python)"
+      prefix-development: "deps(python-dev)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "python"
+    # Agrupar todas las updates menores/patch en un solo PR.
+    groups:
+      python-minor:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      python-major:
+        applies-to: version-updates
+        update-types:
+          - "major"
+    # Si el usuario lo prefiere: ignorar updates major (se aplican manualmente).
+    # ignore:
+    #   - dependency-name: "*"
+    #     update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 5
+    target-branch: "main"
+    # Branch ordering (workaround classic GitHub): las ramas se nombraran con
+    # formato `dependabot/pip/<ecosystem>-<version>` para evitar colisiones.
+    branch-name:
+      separator: "/"
+    # Reutilizar commit messages que pasan tests pre-existentes.
+    rebase-strategy: "auto"
+
+  # -----------------------------------------------------------------------------
+  # GitHub Actions versions (referenciadas via `uses: ...@<version>`).
+  # -----------------------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Lima"
+    commit-message:
+      prefix: "deps(actions)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      actions-minor:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      actions-major:
+        applies-to: version-updates
+        update-types:
+          - "major"
+    open-pull-requests-limit: 5
+    target-branch: "main"
+    rebase-strategy: "auto"

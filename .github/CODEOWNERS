@@ -1,0 +1,49 @@
+# =============================================================================
+# ORION Cognitive Agent - CODEOWNERS
+# =============================================================================
+# Politica de aprobacion (configurada en el ruleset `main - default protection`):
+#   - main: required_approving_review_count: N/A (solo-dev, se merge con --admin)
+#           bypass_actors: RepositoryRole actor_id=5 (admin) bypass_mode=always
+#           current_user_can_bypass: "always"
+#
+# El autor no puede aprobar su propio PR (regla de GitHub). Por eso el repo
+# queda sin `pull_request rule` en el ruleset y el merge usa `--admin` como
+# escape-hatch documentado en AGENTS.md.
+#
+# CODE OWNER del repo (catch-all): @ahincho
+# =============================================================================
+
+# Catch-all: el owner aprueba todos los archivos del repo.
+*                                              @ahincho
+
+# =============================================================================
+# Paths criticos (governance / secrets workflow): @ahincho explicit
+# (separado del catch-all para visibilidad en PR reviews de paths sensibles)
+# =============================================================================
+/README.md                                      @ahincho
+/AGENTS.md                                      @ahincho
+/LICENSE                                        @ahincho
+/.gitignore                                     @ahincho
+/.gitattributes                                 @ahincho
+/.dockerignore                                  @ahincho
+/.yamllint.yml                                  @ahincho
+/.env.example                                   @ahincho
+/.python-version                                @ahincho
+/pyproject.toml                                 @ahincho
+/Makefile                                      @ahincho
+
+# =============================================================================
+# CI/CD + governance del repo
+# =============================================================================
+/.github/                                       @ahincho
+
+# =============================================================================
+# Codigo fuente y tests
+# =============================================================================
+/src/                                           @ahincho
+/tests/                                         @ahincho
+
+# =============================================================================
+# Documentacion (ADRs y docs)
+# =============================================================================
+/docs/                                          @ahincho
