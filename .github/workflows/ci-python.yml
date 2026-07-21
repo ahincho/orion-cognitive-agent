@@ -45,6 +45,3 @@ jobs:
       python-versions: '"3.12"'
       dependency-groups: 'dev bedrock'
       commands: lint:ruff-format,lint:ruff-check,typecheck:mypy,test:pytest,coverage:upload
-      timeout-minutes: 30
-      fail-fast: true
-      cache-suffix: 'smoke-ci-${{ github.run_id }}'
