@@ -39,7 +39,7 @@ permissions:
 
 jobs:
   qa:
-    uses: spark-match/spark-match-01-devops/.github/workflows/python-ci.yml@dev
+    uses: spark-match/spark-match-01-devops/.github/workflows/python-ci.yml@main
     with:
       environment-name: ci
       python-versions: '"3.12"'
