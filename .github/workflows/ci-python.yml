@@ -1,11 +1,11 @@
 # =============================================================================
 # ORION Cognitive Agent -- CI Python (thin caller of 01-devops)
 # =============================================================================
-# Thin caller of `python-ci.yml@dev` from spark-match/spark-match-01-devops.
+# Thin caller of `python-ci.yml@main` from spark-match/spark-match-01-devops.
 # Replaces the previous bespoke 82-line workflow with a thin reusable call.
 #
 # Concrete QA logic lives at:
-#   https://github.com/spark-match/spark-match-01-devops/blob/dev/.github/workflows/python-ci.yml
+#   https://github.com/spark-match/spark-match-01-devops/blob/main/.github/workflows/python-ci.yml
 # =============================================================================
 
 name: CI Python
