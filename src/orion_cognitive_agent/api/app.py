@@ -155,6 +155,10 @@ def create_app(settings: Settings) -> FastAPI:
 
     @app.post("/invocations")
     async def invocations(payload: dict[str, object]) -> dict[str, object]:
+        # DEBUG (smoke-test 2026-07-21): log the raw payload to trace
+        # whether Bedrock AgentCore forwards our JSON as-is. Cheap when
+        # logs are off, keep it explicit at DEBUG level.
+        logger.debug("invocations payload keys=%s", sorted(payload.keys()))
         """Bedrock AgentCore Runtime invocation endpoint.
 
         Contract: ``POST /invocations`` accepts an arbitrary JSON
