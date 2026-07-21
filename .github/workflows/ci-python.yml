@@ -1,8 +1,11 @@
 # =============================================================================
-# ORION Cognitive Agent — CI Python (unit tests + lint + typecheck)
+# ORION Cognitive Agent -- CI Python (thin caller of 01-devops)
 # =============================================================================
-# Stack: Python 3.12 + uv + Pytest + Ruff + mypy strict.
-# Path filter: solo dispara cuando cambian archivos Python o de toolchain.
+# Thin caller of `python-ci.yml@dev` from spark-match/spark-match-01-devops.
+# Replaces the previous bespoke 82-line workflow with a thin reusable call.
+#
+# Concrete QA logic lives at:
+#   https://github.com/spark-match/spark-match-01-devops/blob/dev/.github/workflows/python-ci.yml
 # =============================================================================
 
 name: CI Python
@@ -31,52 +34,14 @@ concurrency:
   group: ci-py-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   qa:
-    name: QA (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12"]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          version: "latest"
-          enable-cache: true
-          cache-dependency-glob: |
-            **/uv.lock
-            **/pyproject.toml
-
-      - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install dev + bedrock dependencies
-        # Sync both `dev` and `bedrock` so mypy strict can check the full
-        # LangChain / langchain-aws / deepagents surface, and so the
-        # bedrock-class smoke tests can run end-to-end on every push.
-        run: uv sync --all-groups
-
-      - name: Lint (ruff format check)
-        run: uv run ruff format --check src/ tests/
-
-      - name: Lint (ruff check)
-        run: uv run ruff check src/ tests/
-
-      - name: Type check (mypy strict)
-        run: uv run mypy src/
-
-      - name: Run tests (pytest)
-        run: uv run pytest --tb=short
-
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.python-version }}
-          path: coverage.xml
-          if-no-files-found: ignore
+    uses: spark-match/spark-match-01-devops/.github/workflows/python-ci.yml@dev
+    with:
+      environment-name: ci
+      python-versions: '"3.12"'
+      dependency-groups: 'dev bedrock'
+      commands: lint:ruff-format,lint:ruff-check,typecheck:mypy,test:pytest,coverage:upload
