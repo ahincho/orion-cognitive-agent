@@ -23,6 +23,9 @@
 # (without lock-check, frozen, pytest-args, coverage-threshold, or
 # permissions-write) still produces a green run on the canonical
 # orion-cognitive-agent layout. See PENDIENTES-CI-CD.md Sprint B.
+# Also grants `pull-requests: write` so the recipe's optional
+# sticky PR coverage comment step is allowed (it stays idle when
+# `permissions-write` is not enabled by the caller).
 # =============================================================================
 
 name: CI Python
@@ -53,6 +56,13 @@ concurrency:
 
 permissions:
   contents: read
+  # Required by the python-ci.yml@main recipe (Sprint B): the
+  # workflow_call callee inherits our token permissions; its
+  # sticky-PR-coverage-comment step (gated by `permissions-write: true`)
+  # needs this grant even when we don't pass that input. The step is
+  # skipped when `permissions-write: false` (default), so this
+  # permission is idle in most runs.
+  pull-requests: write
 
 jobs:
   qa:
