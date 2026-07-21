@@ -1,0 +1,16 @@
+name: DIAG matrix-inputs cross-owner
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/diag-matrix-inputs.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diag:
+    uses: spark-match/spark-match-01-devops/.github/workflows/diag-matrix-inputs.yml@diag/test-env-isolation
+    with:
+      py-versions-raw: '["3.12"]'
