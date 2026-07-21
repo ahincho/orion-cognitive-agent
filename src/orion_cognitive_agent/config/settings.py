@@ -79,10 +79,10 @@ class Settings(BaseSettings):
         description="LLM provider for the agent.",
     )
     model_id: str = Field(
-        default="us.anthropic.claude-sonnet-4-20250514",
+        default="us.anthropic.claude-sonnet-4-6",
         description=(
             "Bedrock model ID. Default is the cross-region inference "
-            "profile for Anthropic Claude Sonnet 4."
+            "profile for Anthropic Claude Sonnet 4.6 (ACTIVE in dev account 681526276858)."
         ),
     )
     aws_region: str = Field(

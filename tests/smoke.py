@@ -67,7 +67,7 @@ class TestSettings:
 
     def test_settings_model_id_default(self) -> None:
         settings = get_settings()
-        assert settings.model_id == "us.anthropic.claude-sonnet-4-20250514"
+        assert settings.model_id == "us.anthropic.claude-sonnet-4-6"
 
     def test_settings_aws_region_default(self) -> None:
         settings = get_settings()
@@ -147,7 +147,7 @@ class TestAgentFactoryBedrock:
     def bedrock_settings(self) -> Settings:
         return Settings(
             environment=Environment.BEDROCK,
-            model_id="us.anthropic.claude-sonnet-4-20250514",
+            model_id="us.anthropic.claude-sonnet-4-6",
             aws_region="us-east-1",
             max_turns=10,
             agent_name="orion-cognitive-agent-test",
