@@ -1,0 +1,17 @@
+name: DIAG matrix-only cross-owner
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/diag-matrix-only.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diag:
+    uses: spark-match/spark-match-01-devops/.github/workflows/diag-matrix-only.yml@diag/test-env-isolation
+    with:
+      environment-name: ci
+      python-versions: '"3.12"'
