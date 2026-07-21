@@ -3,6 +3,8 @@
 # =============================================================================
 # Thin caller of `python-ci.yml@main` from spark-match/spark-match-01-devops.
 # Replaces the previous bespoke 82-line workflow with a thin reusable call.
+# Pinned to python-ci.yml@main (spark-match/spark-match-01-devops) — verified b507860
+# post PR #75 sync-deps fix. Update this comment when bumping the recipe pin.
 #
 # Python version is HARDCODED at 3.12 in the recipe (W1 workaround; see
 # DIAGNOSTICO-GHA-MATRIX-CROSSOWNER.md). Caller does not pass python-versions.
