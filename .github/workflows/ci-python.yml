@@ -1,11 +1,14 @@
 # =============================================================================
 # ORION Cognitive Agent -- CI Python (thin caller of 01-devops)
 # =============================================================================
-# Thin caller of `python-ci.yml@dev` from spark-match/spark-match-01-devops.
+# Thin caller of `python-ci.yml@main` from spark-match/spark-match-01-devops.
 # Replaces the previous bespoke 82-line workflow with a thin reusable call.
 #
+# Python version is HARDCODED at 3.12 in the recipe (W1 workaround; see
+# DIAGNOSTICO-GHA-MATRIX-CROSSOWNER.md). Caller does not pass python-versions.
+#
 # Concrete QA logic lives at:
-#   https://github.com/spark-match/spark-match-01-devops/blob/dev/.github/workflows/python-ci.yml
+#   https://github.com/spark-match/spark-match-01-devops/blob/main/.github/workflows/python-ci.yml
 # =============================================================================
 
 name: CI Python
@@ -42,6 +45,5 @@ jobs:
     uses: spark-match/spark-match-01-devops/.github/workflows/python-ci.yml@main
     with:
       environment-name: ci
-      python-versions: '"3.12"'
       dependency-groups: 'dev bedrock'
       commands: lint:ruff-format,lint:ruff-check,typecheck:mypy,test:pytest,coverage:upload
