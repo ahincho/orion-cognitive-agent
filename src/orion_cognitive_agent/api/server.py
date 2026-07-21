@@ -22,11 +22,6 @@ def main() -> None:
     ``create_app()`` with no arguments and fail at ASGI startup with
     ``missing 1 required positional argument: 'settings'`` — observed in
     Bedrock AgentCore logs on 2026-07-21).
-
-    Access log + DEBUG level so the request flow (headers, body, status,
-    timings) is visible in CloudWatch during debugging. Activate ONLY when
-    investigating 502/timeout incidents — the verbose logs cost real
-    CloudWatch spend on long-lived runs.
     """
     settings = get_settings()
     app = create_app(settings)
@@ -35,8 +30,6 @@ def main() -> None:
         host=settings.api_host,
         port=settings.api_port,
         reload=False,
-        log_level="debug",
-        access_log=True,
     )
 
 
