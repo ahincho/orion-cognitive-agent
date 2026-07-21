@@ -64,16 +64,21 @@ ENV PATH="/app/.venv/bin:${PATH}" \
     ORION_AGENT_ENVIRONMENT=agentcore \
     ORION_AGENT_AWS_REGION=us-east-1 \
     ORION_AGENT_API_HOST=0.0.0.0 \
-    ORION_AGENT_API_PORT=8000
+    # Port 8080 is the AgentCore HTTP protocol contract default
+    # (per AWS docs: runtime-service-contract.html; tab "Compare supported
+    # protocols" -> "HTTP Port 8080, Mount Path /invocations"). Local dev
+    # loops with `make run-local` should override this with
+    # `ORION_AGENT_API_PORT=8000` if needed.
+    ORION_AGENT_API_PORT=8080
 
-EXPOSE 8000
+EXPOSE 8080
 
 USER orion:orion
 
 # Liveness probe via the Bedrock AgentCore contract endpoint.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD python -c "import urllib.request,sys; \
-r=urllib.request.urlopen('http://127.0.0.1:8000/ping', timeout=3); \
+r=urllib.request.urlopen('http://127.0.0.1:8080/ping', timeout=3); \
 sys.exit(0 if r.status == 200 else 1)" || exit 1
 
 # Entrypoint: uvicorn factory wired to settings-derived config.
