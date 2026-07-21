@@ -39,9 +39,12 @@ permissions:
 
 jobs:
   qa:
-    uses: spark-match/spark-match-01-devops/.github/workflows/python-ci.yml@main
+    uses: spark-match/spark-match-01-devops/.github/workflows/python-ci.yml@dev
     with:
       environment-name: ci
       python-versions: '"3.12"'
       dependency-groups: 'dev bedrock'
       commands: lint:ruff-format,lint:ruff-check,typecheck:mypy,test:pytest,coverage:upload
+      timeout-minutes: 30
+      fail-fast: true
+      cache-suffix: 'smoke-${{ inputs.environment-name }}-${{ github.run_id }}'
