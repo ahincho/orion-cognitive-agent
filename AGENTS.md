@@ -196,7 +196,7 @@ Adicionalmente, mantiene los endpoints legacy `GET /health` y
 | `ORION_AGENT_ENVIRONMENT` | `agentcore` (hardcoded en el Dockerfile) | solo durante build local con `docker run -e` |
 | `ORION_AGENT_AWS_REGION`  | `us-east-1` | idem |
 | `ORION_AGENT_API_HOST`    | `0.0.0.0` | idem |
-| `ORION_AGENT_API_PORT`    | `8000` | idem |
+| `ORION_AGENT_API_PORT`    | `8080` (Bedrock AgentCore contract; cambiado en PR #17 desde `8000`) | idem |
 | `ORION_AGENT_MODEL_ID`    | (settings default: Claude Sonnet 4) | idem |
 | `ORION_AGENT_LOG_LEVEL`   | `INFO` | idem |
 | `AWS_REGION`              | (Task role ya en us-east-1) | provisto por el AgentCore Runtime |
@@ -206,6 +206,15 @@ Adicionalmente, mantiene los endpoints legacy `GET /health` y
 > inyectarse vía la configuración del
 > `aws_bedrockagentcore_agent_runtime.environment_variables` (ver
 > `live/dev/main.tf` modulo `bedrock-agent-core-runtime`).
+>
+> **Nota sobre `ORION_AGENT_API_PORT`:** el AgentCore contract exige
+> puerto **8080** (no 8000). Conflicto conocido: el `Settings`
+> default del repo sigue siendo `8000` para desarrollo local
+> (`make dev`); el Dockerfile + runtime env lo sobrescriben a
+> `8080` cuando `ORION_AGENT_ENVIRONMENT=agentcore`. Si en CI se
+> valida contra `Settings.api_port` sin el env override se
+> obtendrá el puerto equivocado; ver PR #17 (Dockerfile) y
+> #65 (TF runtime env).
 
 ## Contacto
 
