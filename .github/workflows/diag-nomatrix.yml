@@ -1,0 +1,16 @@
+name: DIAG no-matrix cross-owner
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/diag-nomatrix.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diag:
+    uses: spark-match/spark-match-01-devops/.github/workflows/diag-nomatrix.yml@diag/test-env-isolation
+    with:
+      environment-name: ci
