@@ -14,6 +14,15 @@
 # only re-affirms the `@main` pin and the inline reference link after
 # spark-match-01-devops#77 promoted Sprint D (P4 docs + 4.3 self-test
 # enhancement) from dev to main. See PENDIENTES-CI-CD.md Sprint D.
+#
+# Sprint B smoke (2026-07-21): same as Sprint D post-promote pattern.
+# spark-match-01-devops#79 promoted Sprint B (6 new inputs + 5 new
+# commands on python-ci.yml) from dev to main. The caller is already
+# on `@main` so the pin automatically picks up the new inputs; this
+# smoke trigger cross-owner verification that the default invocation
+# (without lock-check, frozen, pytest-args, coverage-threshold, or
+# permissions-write) still produces a green run on the canonical
+# orion-cognitive-agent layout. See PENDIENTES-CI-CD.md Sprint B.
 # =============================================================================
 
 name: CI Python
